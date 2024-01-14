@@ -1,0 +1,5 @@
+Save 4 - Episode 801/10000, Score: 189.0, Epsilon: 0.29199999999958065, AVG Score: 189.0
+Save 5 - Episode 1324/10000, Score: 236.0, Epsilon: 0.1, AVG Score: 42.041666666666664
+Save 6 - Episode 1332/10000, Score: 289.0, Epsilon: 0.1, AVG Score: 45.9375
+Save 7 - Episode 1351/10000, Score: 191.0, Epsilon: 0.1, AVG Score: 191.0
+Save 8 - Episode 10000/10000, Score: 40.0, Epsilon: 0.1, AVG Score: 23.02

@@ -4,12 +4,13 @@ import gym
 from duelingNetwork import duelingDQN
 import tensorflow as tf
 from PER import PER
+from uniform_exp_replay import ReplayBuffer
 import numpy as np
 import pandas as pd
 
 ########## CONSTANTS ##################
 
-EPISODES = 3000
+EPISODES = 10000
 LEARNING_RATE = 0.00025
 REPLAY_INIT_SIZE = 500
 BATCH_SIZE = 64
@@ -17,12 +18,12 @@ DISCOUNTED_FACTOR = 0.99
 
 start_epsilon = 1.0
 final_epsilon = 0.1
-epsilon_decay = 0.00005 
+epsilon_decay = 0.00004 
 
 ########### ALGORITHM CODE ################
 
 # Train or Test 
-train = False
+train = True
 
 if train:
     # Creating enviroment
@@ -39,6 +40,9 @@ if train:
 
     q_target_net.set_weights(q_net.get_weights())
     # Creating memory object
+    # Uniform Experience Replay (UER) or First Approach using Experience Replay
+    #memory = ReplayBuffer(1_000_000)
+    # Prioritized Experience Replay (PER)
     memory = PER(1_000_000)
     # Epsilon
     epsilon = start_epsilon
@@ -46,7 +50,7 @@ if train:
     goal = 200
 
     # Network Saved number f
-    f = 1   
+    f = 1
     score_record = []
     mse_record = []
 
@@ -76,20 +80,25 @@ if train:
             next_observation, reward, done, _, _ = env.step(action)
 
             # Cumulative reward
-            score += reward
-            
+            score += reward            
 
             # Experience 
-            experience = np.array([observation, score, action, next_observation, done], dtype=object)        
+            experience = np.array([observation, reward, action, next_observation, done], dtype=object)        
             experience = experience.reshape((1,5))        
 
             # Adding experience
             memory.add(experience)
 
             # Start to train the dueling Network
-            if memory.tree.data_pointer >= REPLAY_INIT_SIZE:
+            # For UER
+            #if len(memory.storage) >= REPLAY_INIT_SIZE:
+            if memory.tree.data_ptr:
                 # Sample the memory
+                # For PER
                 weights, tree_idx, minibatch = memory.sample(BATCH_SIZE) 
+                # For UER
+                #minibatch = memory.sample(BATCH_SIZE)                
+                
                 # Preprocessing experience data
                 states = np.empty((BATCH_SIZE, minibatch[0,0].size))            
                 next_states = np.empty((BATCH_SIZE, minibatch[0,3].size))
@@ -122,8 +131,11 @@ if train:
                     # Computing absolute error for new priorities
                     errors[idx] = np.abs(q_preds[idx] - q_target_value)
                 # Training the dueling network             
+                # Using PER
                 losses = q_net.train_on_batch(x= states, y= q_target, sample_weight=weights, return_dict=True)
-                # Updating losses
+                # Using UER
+                #losses = q_net.train_on_batch(x= states, y= q_target, return_dict=True)
+                # Updating losses (for PER)
                 memory.update(tree_idx, errors)                    
                 mse_losses.append(losses['loss'])
                 # Decrement epsilon value
@@ -135,11 +147,11 @@ if train:
             observation = next_observation
 
         score_record.append(score)
-        mse_record.append(np.median(mse_losses))
+        mse_record.append(np.mean(mse_losses))
         avg_score = np.mean(score_record[-50:])
 
         # Saving network
-        if (score == 200) or (avg_score >= 190.0):
+        if (score >= 200) or (avg_score >= 150.0):
             q_net.save(("networks/d3dqn_model{0}".format(f)))
             with open("records/save_network.txt", 'a') as file:
                 file.write("Save {0} - Episode {1}/{2}, Score: {3}, Epsilon: {4}, AVG Score: {5}\n".format(f, epis, EPISODES, score, epsilon, avg_score))
@@ -163,17 +175,18 @@ if train:
             mse_record = []
             score_record = []
 else:
-    env = gym.make("CartPole-v1")   
+    env = gym.make("CartPole-v1", render_mode='human')   
     
     # Loading Dueling Network
-    model_path = "networks/d3dqn_model1"      
+    model_path = "networks/d3dqn_model7"      
     q_net = tf.keras.models.load_model(model_path)   
     score_record = []    
-    for epis in range(1,51):
+    for epis in range(1,11):
         print("EPISODE: ", epis)    
         # Reset enviroment
         observation = env.reset()
-        observation = observation[0]   
+        observation = observation[0]
+        env.render()   
         
         done = False
         # Cumulative reward
@@ -209,31 +222,6 @@ else:
     print("Min score: ", np.min(score_record))
         
         
-        
-
-
-
-        
-
-        
-
-
-
-
-
-
-
-        
-   
-    
-
-    
-
-    
-    
-        
-        
-
 # Close enviroment
 env.close()
 
