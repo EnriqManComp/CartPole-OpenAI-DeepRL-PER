@@ -10,7 +10,7 @@ class SumTree():
         self.tree = np.zeros(2 * capacity - 1)
         # Setting size of data = number of leaves nodes and fill them with zeros
         self.data = np.zeros(capacity, dtype=object)
-        self.save_tree_list = []
+        self.data_ptr = False
         
     
     def add(self, priority, experience):
@@ -28,6 +28,8 @@ class SumTree():
         self.update(tree_index, priority)
         # Adding 1 to the pointer
         self.data_pointer += 1
+        if self.data_pointer >= 500:
+            self.data_ptr = True
         # Checking if the pointer exceed the capacity
         if self.data_pointer >= self.capacity:
             # Restart in the first leaf

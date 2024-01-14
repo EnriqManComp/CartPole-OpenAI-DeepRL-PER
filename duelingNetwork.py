@@ -7,7 +7,7 @@ class duelingDQN():
         X_input = tf.keras.layers.Input(input_dim)
         X = X_input
 
-        X = tf.keras.layers.Dense(units=256)(X)
+        X = tf.keras.layers.Dense(units= 256)(X)
         X = tf.keras.layers.ReLU()(X)
 
         V = tf.keras.layers.Dense(units=fc1_units)(X)
